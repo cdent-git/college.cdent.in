@@ -10,14 +10,14 @@ exports.login = async (req, res) => {
 		.createHash("sha512")
 		.update(req.body.password, "utf8")
 		.digest("hex");
-
+	console.log(inputPwdHash);
 	if (process.env.SUPER_ADMIN_PWD === inputPwdHash) {
 		// Password is correct Login user now
 
 		const browser = req.headers["user-agent"];
 		const userIP =
-      req.header("x-forwarded-for") ||
-      req.connection.remoteAddress + inputPwdHash;
+			req.header("x-forwarded-for") ||
+			req.connection.remoteAddress + inputPwdHash;
 		const str = browser + userIP;
 		const secret = crypto.createHash("sha512").update(str, "utf8");
 		req.session.login = true;
@@ -41,8 +41,8 @@ exports.checkLogin = async (req, res) => {
 	if (
 		!(
 			req.session.login &&
-      req.session.superAdmin &&
-      loginHash === req.session.secret
+			req.session.superAdmin &&
+			loginHash === req.session.secret
 		)
 	) {
 		res.redirect("/super/admin");
@@ -73,7 +73,7 @@ exports.acceptCollege = async (collegeID) => {
 	// && Generate a link to send as email
 	const uniqueString = utils.randomString(16);
 	const link =
-    "https://college.cdent.co.in/" + "/account/create/" + uniqueString;
+		"https://college.cdent.co.in/" + "/account/create/" + uniqueString;
 
 	const adminModel = new AdminModel({
 		name: data.name,
@@ -101,6 +101,6 @@ exports.acceptCollege = async (collegeID) => {
 		body,
 		(msg) => {
 			console.log(msg);
-		}
+		},
 	);
 };

@@ -1,9 +1,11 @@
 const crypto = require("crypto");
 
-// Database modles
+// Database models
 const TempModel = require("../database/models/temp-model");
 const AdminModelList = require("../database/models/adminList-model");
-const college= require("../database/models/college");
+const college = require("../database/models/college");
+const loginHelper = require("./../utils/login-helper");
+
 
 // Utils
 const Utils = require("./utils/index");
@@ -30,10 +32,10 @@ exports.setPassword = async (req, res) => {
 
 	// recaptcha to prevent bots.
 	const response = await Utils.reCaptcha(req);
-
+	console.log(response);
 	// // Checking the response
-	if (!response.data.success) {
-		throw new Error(response.data["error-codes"]);
+	if (response !== true) {
+		throw new Error(response);
 	} else {
 		if (pwd !== rpwd) {
 			throw new Error("Passwords doesn't match");
@@ -75,18 +77,16 @@ exports.setPassword = async (req, res) => {
 			// saving the collegeAdmin info
 			await new collegeAdmin(newAdmin).save();
 		} catch (e) {
-			throw new Error(e.message);
+			throw new Error(e);
 		}
 	}
 };
 
 // eslint-disable-next-line valid-jsdoc
 /**
- * @param {Object, Object} req, res
+ * @param req
  * @param res
  * @param collegeDB
- * @param {String} req.body.email
- * @param {String} req.body.password
  * @description check the password is correct then create a new session
  * @return admin data || Error
  * */
@@ -94,22 +94,18 @@ exports.login = async (req, res, collegeDB) => {
 	const email = req.body.email;
 	const pwd = req.body.password;
 	const collegeName = req.params.college_name;
-	// getModel() will return the model depending on the email;
-	const Model = await getModel(email, collegeDB);
 
-	// this function will check the password is correct and return user object
-	const user= await Model.authenticate(email, pwd);
-	const browser = req.headers["user-agent"];
-	const userIP =
-      req.header("x-forwarded-for") ||
-      req.connection.remoteAddress + user.password;
-	const str = browser + userIP;
-	const secret = crypto.createHash("sha512").update(str, "utf8");
-	req.session.login = true;
-	req.session.superAdmin = false;
-	req.session.userId = user._id;
-	req.session.secret = secret.digest("hex");
-	res.redirect(`/${collegeName}/dashboard`);
+	try {
+		// getModel() will return the model depending on the email;
+		const Model = await getModel(email, collegeDB);
+		// this function will check the password is correct and return user object
+		const user = await Model.authenticate(email, pwd);
+		await loginHelper.newLogin(req, user);
+		res.redirect(`/${collegeName}/dashboard`);
+	} catch (e) {
+		console.log(e);
+		throw new Error(e);
+	}
 };
 
 exports.register = async (req, res) => {
@@ -117,8 +113,8 @@ exports.register = async (req, res) => {
 
 	const response = await Utils.reCaptcha(req, res);
 	// console.log(response);
-	if (!response.data.success) {
-		throw new Error(response.data["error-codes"]);
+	if (response !== true) {
+		throw new Error(response);
 	} else {
 		const temp = await TempModel.find({
 			email: req.body.email,
@@ -145,15 +141,16 @@ exports.register = async (req, res) => {
 const getModel = async (email, DB_NAME) => {
 	const Model = await college.getCollegeAdminModel(DB_NAME);
 	const exist = await Model.exists({email});
-	if (exist) return Model;
-	// else {
-	// 	Model = await college.getDeptAdminModel(DB_NAME);
-	// 	exist = await Model.exist({email});
+	if (exist) {
+		return Model;
+	}// else {
+		// 	Model = await college.getDeptAdminModel(DB_NAME);
+		// 	exist = await Model.exist({email});
 
-	// 	if (exist) return Model;
-	// 	else {
-	// 		Model = await college.getFacultyModel(DB_NAME);
-	// 		exist = await Model.exist({email});
+		// 	if (exist) return Model;
+		// 	else {
+		// 		Model = await college.getFacultyModel(DB_NAME);
+		// 		exist = await Model.exist({email});
 
 	// 		if (exist) return Model;
 	else {

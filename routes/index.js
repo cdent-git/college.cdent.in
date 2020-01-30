@@ -2,13 +2,26 @@
 const express = require("express");
 const router = express.Router();
 const upload = require("../utils/multer");
+const loginMiddleware = require("./../middlewares/login-middleware");
 
 // Todo: change the collegeAdminList to proper name
 const collegeAdminList = require("../services/college");
 const college = require("../database/models/college");
 
-/* GET / return login page. */
+/**
+ *  GET /
+ *  return login page.
+ **/
 router.get("/", function(req, res) {
+	res.render("login", {title: "login | cDent", layout: false});
+});
+
+/**
+ * GET /login
+ * return login page
+ **/
+
+router.get("/login", function(req, res) {
 	res.render("login", {title: "login | cDent", layout: false});
 });
 
@@ -17,7 +30,10 @@ router.get("/", function(req, res) {
  * return register page
  */
 router.get("/register", (req, res) => {
-	res.render("register", {title: "Register | cDent", key: process.env.RECAPCTHA_KEY});
+	res.render("register", {
+		title: "Register | cDent",
+		key: process.env.RECAPTCHA_KEY,
+	});
 });
 
 //  POST /register for register the college
@@ -36,7 +52,7 @@ router.post("/register", upload.single("file"), async (req, res) => {
 	res.render("register", {
 		response: rVal,
 		title: "Register",
-		key: process.env.RECAPCTHA_KEY,
+		key: process.env.RECAPTCHA_KEY,
 	});
 });
 
@@ -47,7 +63,7 @@ router.get("/account/create/:uniqueString", async (req, res) => {
 			await collegeAdminList.checkExists(req);
 			res.render("create_password", {
 				title: "Create Password",
-				key: process.env.RECAPCTHA_KEY,
+				key: process.env.RECAPTCHA_KEY,
 				uniqueString: req.params.uniqueString,
 			});
 		} else {
@@ -64,15 +80,17 @@ router.post("/account/create/:uniqueString", async (req, res) => {
 		await collegeAdminList.setPassword(req, res);
 		res.render("login", {message: "successfully created the password"});
 	} catch (e) {
-		res.render("create_password", {error: e.message,
+		res.render("create_password", {
+			error: e.message,
 			title: "Create Password",
-			key: process.env.RECAPCTHA_KEY,
-			uniqueString: req.params.uniqueString});
+			key: process.env.RECAPTCHA_KEY,
+			uniqueString: req.params.uniqueString,
+		});
 	}
 });
 
 // College dashboard starts here
-router.get("/:college_name", async (req, res)=> {
+router.get("/:college_name", async (req, res) => {
 	const collegeName = req.params.college_name;
 	try {
 		await college.getcollegeDB(collegeName);
@@ -88,8 +106,9 @@ router.post("/:college_name", async (req, res) => {
 	try {
 		const collegeDB = await college.getcollegeDB(collegeName);
 		await collegeAdminList.login(req, res, collegeDB);
-		res.send({msg: "Your an admin"});
+		// res.send({msg: "Your an admin"});
 	} catch (e) {
+		console.log(e);
 		// res.status(401).send({error: e.message});
 		res.render("login", {
 			college: collegeName,
@@ -97,8 +116,12 @@ router.post("/:college_name", async (req, res) => {
 			email: req.body.email,
 			layout: false,
 		});
-	//	Todo Work on catch function
+		//	Todo Work on catch function
 	}
+});
+
+router.get("/:college_name/dashboard", loginMiddleware, (req, res) => {
+	res.render("dashboard");
 });
 
 module.exports = router;

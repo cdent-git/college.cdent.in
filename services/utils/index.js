@@ -1,5 +1,6 @@
-const axios = require("axios");
+const rp = require("request-promise");
 const crypto = require("crypto");
+const loginHelper = require("./../../utils/login-helper");
 
 const transporter = require("./mail-config");
 
@@ -19,28 +20,32 @@ exports.mailer = {
 // Google reCaptcha
 exports.reCaptcha = async (req) => {
 	const recaptcha = req.body["g-recaptcha-response"];
-	const userIP =
-		req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
-	const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPCTHA_SECRET}&response=${recaptcha}&remoteip=${userIP}`;
+	const verificationURL = "https://www.google.com/recaptcha/api/siteverify";
+	const postData = {
+		secret: process.env.RECAPTCHA_SECRET,
+		response: recaptcha,
+	};
+	const options = {
+		method: "POST",
+		uri: verificationURL,
+		form: postData,
+		json: true,
+	};
 
-	return axios.get(verificationURL);
+	try {
+		const response = await rp(options);
+		if (response.success !== true) {
+			return response["error-codes"];
+		}
+		return true;
+	} catch (e) {
+		return new Error(e);
+	}
 };
 
 exports.sessions = async (req, user) => {
-	const role = user.role;
-
-	const browser = req.headers["user-agent"];
-	const userIP =
-		req.header("x-forwarded-for") ||
-		req.connection.remoteAddress + user.password;
-	const str = browser + userIP;
-	const secret = crypto.createHash("sha512").update(str, "utf8");
-	req.session.login = true;
-	req.session.user_id = user._id;
-	req.session.username = user.name;
-	req.session.role = role;
-	req.session.secret = secret.digest("hex");
+	await loginHelper.newLogin(req, user);
 };
 
 exports.createHash = (key) => {

@@ -33,10 +33,11 @@ app.use(cookieParser());
 // session setup
 const sessionOptions = {
 	store: new FileStore({}),
-	secret: "dfsdfsd", // process.env.SESSION_SECRET,
-	resave: true,
-	saveUninitialized: false,
+	secret: process.env.SESSION_SECRET || "Aie8whuhHHk8wh",
+	resave: false,
+	saveUninitialized: true,
 	cookie: {secure: false},
+	name: "user__",
 };
 
 

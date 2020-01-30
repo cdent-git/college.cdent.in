@@ -84,8 +84,3 @@ uploads/
 sessions/
 
 playground/
-
-# folder created by pnpm
-pnpm-lock.yaml
-
-package-lock.json
