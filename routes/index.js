@@ -124,4 +124,16 @@ router.get("/:college_name/dashboard", loginMiddleware, (req, res) => {
 	res.render("dashboard");
 });
 
+// router.post("/:college_name/dashboard/add_department", loginMiddleware, (req, res) => {
+// 	const collegeName = req.params.college_name;
+
+// 	try {
+// 		const collegeDB = await college.getcollegeDB(collegeName);
+// 		//TODO : work on add admin functionality
+// 	} catch (e) {
+// 		console.log(e.message);
+// 		res.render("dashboard");
+// 	}
+// });
+
 module.exports = router;
